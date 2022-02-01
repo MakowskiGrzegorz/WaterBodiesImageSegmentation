@@ -5,11 +5,11 @@ class GANConfig:
         self.latent_vector_size = 100
         self.generator_features_number = 128
         self.generator_features_multipliers = [8, 4, 2]
-
+        self.generator_block_type = 'transpose'  #transpose or upsample
         #discriminator
         self.discriminator_features_number = 64
         self.discriminator_features_multipliers = [1, 2, 4, 8]
-
+        self.discriminator_block_type = 'basic' #basic or dropout
         #optimiziers
         self.learning_rate = 2e-4
         self.beta1 = 0.5
