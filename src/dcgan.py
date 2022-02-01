@@ -17,19 +17,7 @@ from tqdm import tqdm
 from train import FIXED_NOISE, dcgan_train, dcganNew_train
 from utils import save_weights, show_anim, show_loss
 from config import GANConfig, gan_cfg, train_cfg, DEVICE
-#from inference import make_grid
-#### GLOBALS
-# nz= 100
-# ngf = 128
-# ndf = 64
-# nc = 3
-# lr = 2e-4
-# beta1 = 0.5
-# num_epochs = 30
-# batch_size = 10
-# image_size = 64
-# GENERATOR_FEATURES = [ 8, 4, 2]
-# DISCRIMINATOR_FEATURES = [1, 2, 4, 8] 
+
 def weights_init(m):
     classname = m.__class__.__name__
 
