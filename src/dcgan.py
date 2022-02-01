@@ -27,46 +27,8 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
-class GeneratorBlock(nn.Module):
-    """Basic Generator block. This is a stack of ConvTranspose, Batchnorm and Relu as activation"""
-    def __init__(self, features_in, features_out, kernel_size, stride, padding):
-        super(GeneratorBlock, self).__init__()
-        self.block = nn.Sequential(
-            nn.ConvTranspose2d(features_in, features_out, kernel_size, stride, padding, bias=False),
-            nn.BatchNorm2d(features_out),
-            nn.ReLU(True)
-        )
-    def forward(self, x):
-        x = self.block(x)
-        return x
 
-class Generator(nn.Module):
-    """Basic Generator for GAN framework"""
-    def __init__(self, config:GANConfig):
-        super(Generator, self).__init__()
 
-        self.input = GeneratorBlock(config.latent_vector_size, config.generator_features_number * config.generator_features_multipliers[0], kernel_size=4, stride=1, padding=0)
-        self.main = nn.ModuleList()
-        self.main += [GeneratorBlock(config.generator_features_number * config.generator_features_multipliers[i], config.generator_features_number * config.generator_features_multipliers[i+1], kernel_size=4, stride=2, padding=1) for i in range(len(config.generator_features_multipliers) -1)]
-        self.main.append(GeneratorBlock(config.generator_features_number * config.generator_features_multipliers[-1], config.generator_features_number, kernel_size=4, stride=2, padding=1))
-        
-        self.last = nn.Sequential(
-            nn.ConvTranspose2d(config.generator_features_number, config.number_of_channels, kernel_size=4, stride=2, padding=1),
-            nn.Tanh()
-        )
-        self.optimizer = optim.Adam(self.parameters(), lr=config.learning_rate, betas=(config.beta1, 0.999))
-
-    def forward(self, x):
-        #print(x.shape)
-        x = self.input(x)
-        #print(x.shape)
-        for block in self.main:
-            x = block(x)
-            #print(x.shape)
-        
-        x = self.last(x)
-        #print(x.shape)
-        return x
 
 
 # class GeneratorNew(nn.Module):
@@ -97,23 +59,6 @@ class Generator(nn.Module):
 #         return img
 
 
-# class DiscriminatorBlockNew(nn.Module):
-#     """Some Information about DiscriminatorBlockNew"""
-#     def __init__(self, features_in, features_out, kernel_size=3, stride=2, padding=1, bn=True):
-#         super(DiscriminatorBlockNew, self).__init__()
-            
-#         self.block = [nn.Conv2d(features_in, features_out, kernel_size, stride, padding),
-#                       nn.LeakyReLU(0.2, inplace=True),
-#                       nn.Dropout2d(0.25),]
-#         if bn:
-#             self.block.append(nn.BatchNorm2d(features_out, 0.8))
-        
-#         self.layer = nn.Sequential(*(self.block(features_in, features_out, kernel_size, stride, padding,bn)))
-        
-#     def forward(self, x):
-
-#         x = self.layer(x)
-#         return x
 
 # class DiscriminatorNew(nn.Module):
 #     """Some Information about DiscriminatorNew"""
@@ -141,45 +86,7 @@ class Generator(nn.Module):
 #         validity = self.adv_layer(x)
 #         return validity
 
-class DiscriminatorBlock(nn.Module):
-    """Some Information about DiscriminatorBlock"""
-    def __init__(self, features_in, features_out, kernel_size, stride, padding):
-        super(DiscriminatorBlock, self).__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(features_in, features_out, kernel_size, stride, padding, bias=False),
-            nn.BatchNorm2d(features_out),
-            nn.LeakyReLU(0.2, inplace=True)
-        )
 
-    def forward(self, x):
-        x = self.block(x)
-        return x
-
-class Discriminator(nn.Module):
-    """Some Information about Discriminator"""
-    def __init__(self, config:GANConfig):
-        super(Discriminator, self).__init__()
-
-        self.input = nn.Sequential(
-            nn.Conv2d(config.number_of_channels, config.discriminator_features_number * config.discriminator_features_multipliers[0], kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.2, inplace=True)
-        )
-        self.main = nn.ModuleList()
-        self.main += [DiscriminatorBlock(config.discriminator_features_number * config.discriminator_features_multipliers[i], config.discriminator_features_number * config.discriminator_features_multipliers[i+1],kernel_size=4, stride=2, padding=1) for i in range(len(config.discriminator_features_multipliers)-1)]
-        self.last = nn.Sequential(
-            nn.Conv2d(config.discriminator_features_number * config.discriminator_features_multipliers[-1], 1, kernel_size=4, stride=1, padding=0, bias=False),
-            nn.Sigmoid()
-        )
-        self.optimizer = optim.Adam(self.parameters(), lr=config.learning_rate, betas=(config.beta1, 0.999))
-        self.history = torch.Tensor()
-    def forward(self, x,feature=False):
-        x = self.input(x)
-        for block in self.main:
-            x = block(x)
-        if feature:
-            return x
-        x = self.last(x)
-        return x
 
 
 #DEVICE = "cuda"
