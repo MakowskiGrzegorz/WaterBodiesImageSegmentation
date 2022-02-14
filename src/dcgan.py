@@ -14,9 +14,12 @@ import torchvision.utils as vutils
 import random
 import os
 from tqdm import tqdm
-from train import FIXED_NOISE, dcgan_train, dcganNew_train
 from utils import save_weights, show_anim, show_loss
 from config import GANConfig, gan_cfg, train_cfg, DEVICE
+
+
+from discriminator import Discriminator
+from generator import Generator
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -27,69 +30,8 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
-
-
-
-
-# class GeneratorNew(nn.Module):
-#     """Some Information about GeneratorNew"""
-#     def __init__(self):
-#         super(GeneratorNew, self).__init__()
-#         self.init_size = image_size // 4
-
-#         self.input = nn.Sequential(nn.Linear(nz, 128 * self.init_size **2))
-#         self.conv_blocks = nn.Sequential(
-#             nn.BatchNorm2d(128),
-#             nn.Upsample(scale_factor=2),
-#             nn.Conv2d(128, 128, 3, stride=1, padding=1),
-#             nn.BatchNorm2d(128, 0.8),
-#             nn.LeakyReLU(0.2, inplace=True),
-#             nn.Upsample(scale_factor=2),
-#             nn.Conv2d(128, 64, 3, stride=1, padding=1),
-#             nn.BatchNorm2d(64, 0.8),
-#             nn.LeakyReLU(0.2, inplace=True),
-#             nn.Conv2d(64, 3, 3, stride=1, padding=1),
-#             nn.Tanh(),
-#         )
-
-#     def forward(self, x):
-#         x = self.input(x)
-#         x = x.view(x.shape[0], 128, self.init_size, self.init_size)
-#         img = self.conv_blocks(x)
-#         return img
-
-
-
-# class DiscriminatorNew(nn.Module):
-#     """Some Information about DiscriminatorNew"""
-#     def __init__(self):
-#         super(DiscriminatorNew, self).__init__()
-#         def discriminator_block(in_filters, out_filters, bn=True):
-#             block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(0.2, inplace=True), nn.Dropout2d(0.25)]
-#             if bn:
-#                 block.append(nn.BatchNorm2d(out_filters, 0.8))
-#             return block
-
-#         self.model = nn.Sequential(
-#             *discriminator_block(3, 16, bn=False),
-#             *discriminator_block(16, 32),
-#             *discriminator_block(32, 64),
-#             *discriminator_block(64, 128),
-#         )
-
-#         ds_size = image_size //2** 4
-
-#         self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
-#     def forward(self, x):
-#         x = self.model(x)
-#         x = x.view(x.shape[0], -1)
-#         validity = self.adv_layer(x)
-#         return validity
-
-
-
-
 #DEVICE = "cuda"
+
 class DCGAN(nn.Module):
     """Some Information about DCGAN"""
     def __init__(self,config:GANConfig):
@@ -102,43 +44,67 @@ class DCGAN(nn.Module):
 
         self.criterion = nn.BCELoss()
 
-    def forward(self, x, features_matching=False, historical_averging=False):
-        #train disc on real
-        real_img = x.to(DEVICE)
-        batch_size = real_img.size(0)
+    def discriminator_train(self, x):
+        # DISCRIMINATOR ON REAL
+        batch_size = x.size(0)
         label = torch.full((batch_size,), 1.0, dtype=torch.float, device=DEVICE)
-        ## train disc
-        if historical_averging:
-            self.discriminator.zero_grad()
-            z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
-            err_real = self.criterion(self.discriminator(real_img).view(-1),label)
-            fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
-            err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
-            errD = (err_real + err_fake )/2
-            if len(self.discriminator.history) >=1:
+        err_real = self.criterion(self.discriminator(x).view(-1),label)
+        # DISCRIMINATOR ON FAKE
+        z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
+        fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
+        err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
+
+        errD = (err_real + err_fake )/2
+        errD.backward()
+        return errD
+
+
+    def generator_train(self, x):
+        batch_size = x.size(0)
+        z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
+        fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
+        fake = self.generator(z)
+        output = self.discriminator(fake).view(-1)
+        errG = self.criterion(output, fake_label)
+        errG.backward()
+        return errG
+
+    def forward(self, x):
+
+        # TRAIN DISCRIMINATOR
+        self.discriminator.zero_grad()
+        errD  = self.discriminator_train(x)         
+        self.discriminator.optimizer.step() 
+
+        # TRAIN GENERATOR
+        self.generator.zero_grad()
+        errG = self.generator_train(x)
+        self.generator.optimizer.step()
+
+        return errD.item(), errG.item()
+
+
+        # if historical_averging:
+        #     self.discriminator.zero_grad()
+        #     z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
+        #     err_real = self.criterion(self.discriminator(real_img).view(-1),label)
+        #     fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
+        #     err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
+        #     errD = (err_real + err_fake )/2
+        #     if len(self.discriminator.history) >=1:
                 
-                self.discriminator.history = torch.cat((self.discriminator.history, errD.unsqueeze_(0)),dim=0)
-                print(f"jestem  {self.discriminator.history.shape}")
-                errD = torch.mean(errD-torch.mean(self.discriminator.history,dim=0))
-            else:
-                self.discriminator.history = torch.tensor(errD,device=DEVICE)
-                self.discriminator.history.unsqueeze_(0)
-                print(self.discriminator.history)
-                self.discriminator.history
-            errD.backward()
-            self.discriminator.optimizer.step()
-        
+        #         self.discriminator.history = torch.cat((self.discriminator.history, errD.unsqueeze_(0)),dim=0)
+        #         print(f"jestem  {self.discriminator.history.shape}")
+        #         errD = torch.mean(errD-torch.mean(self.discriminator.history,dim=0))
+        #     else:
+        #         self.discriminator.history = torch.tensor(errD,device=DEVICE)
+        #         self.discriminator.history.unsqueeze_(0)
+        #         print(self.discriminator.history)
+        #         self.discriminator.history
+        #     errD.backward()
+        #     self.discriminator.optimizer.step() 
             
-            
-        else:
-            self.discriminator.zero_grad()
-            z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
-            err_real = self.criterion(self.discriminator(real_img).view(-1),label)
-            fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
-            err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
-            errD = (err_real + err_fake )/2
-            errD.backward()
-            self.discriminator.optimizer.step()
+        # else:
             # self.discriminator.zero_grad()
             # output = self.discriminator(real_img).view(-1)
             # errD_real = self.criterion(output, label)
@@ -157,28 +123,23 @@ class DCGAN(nn.Module):
             # self.discriminator.optimizer.step()
             
         ## train gen
-        if not features_matching:
-            #print("stary loss")
-            self.generator.zero_grad()
-            label.fill_(1.0)
-            fake = self.generator(z)
-            output = self.discriminator(fake).view(-1)
-            errG = self.criterion(output, label)
-            errG.backward()
+        # if not features_matching:
+        #     #print("stary loss")
 
-            self.generator.optimizer.step()
-        else:
+
+        #     self.generator.optimizer.step()
+        # else:
             #print("nowy loss")
-            fake = self.generator(z)
-            self.generator.zero_grad()
-            out_fake = self.discriminator(fake, features_matching)
-            out_real = self.discriminator(real_img, features_matching)
-            m1 = torch.mean(out_fake,dim=0)
-            m2 = torch.mean(out_real,dim=0)
-            errG = torch.mean(torch.abs(m2 - m1))
-            errG.backward()
-            self.generator.optimizer.step()
-        return errD.item(),errG.item()
+            # batch_size = x.size(0)
+            # z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
+            # fake = self.generator(z)
+            # out_fake = self.discriminator(fake)
+            # out_real = self.discriminator(x)
+            # m1 = torch.mean(out_fake,dim=0)
+            # m2 = torch.mean(out_real,dim=0)
+            # errG = torch.mean(torch.abs(m2 - m1))
+            # errG.backward()
+
 
     def save(self, folder_path, postfix):
         gen_name = f"generator_fs_{self.config.generator_features_number}_{postfix}.pth"
