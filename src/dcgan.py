@@ -24,9 +24,9 @@ from generator import Generator
 def weights_init(m):
     classname = m.__class__.__name__
 
-    if classname.find("Conv") != -1:
+    if classname.find("Conv") != -1 and classname.find("Block") == -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm") != -1:
+    elif classname.find("BatchNorm") != -1 and classname.find("Block") == -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
@@ -55,7 +55,7 @@ class DCGAN(nn.Module):
         err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
 
         errD = (err_real + err_fake )/2
-        errD.backward()
+        #
         return errD
 
 
@@ -66,22 +66,34 @@ class DCGAN(nn.Module):
         fake = self.generator(z)
         output = self.discriminator(fake).view(-1)
         errG = self.criterion(output, fake_label)
-        errG.backward()
+        #errG.backward()
         return errG
+            # self.generator.zero_grad()
+            # label.fill_(1.0)
+            # fake = self.generator(z)
+            # output = self.discriminator(fake).view(-1)
+            # errG = self.criterion(output, label)
+            # errG.backward()
 
+            # self.generator.optimizer.step()
     def forward(self, x):
-
+        x = x.to(DEVICE)
         # TRAIN DISCRIMINATOR
         self.discriminator.zero_grad()
-        errD  = self.discriminator_train(x)         
+        errD  = self.discriminator_train(x)
+        error_disc = errD.clone()
+        errD.backward()         
         self.discriminator.optimizer.step() 
 
         # TRAIN GENERATOR
         self.generator.zero_grad()
         errG = self.generator_train(x)
+        error_gen = errG.clone()
+        errG.backward()
+
         self.generator.optimizer.step()
 
-        return errD.item(), errG.item()
+        return error_disc.item(), error_gen.item()
 
 
         # if historical_averging:
@@ -174,9 +186,9 @@ if __name__=='__main__':
     manualSeed = 999
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
-    folder_name = "dcgan_FM_HA_Test"
+    folder_name = "dcgan_refactor_test"
     start_epoch = 0
-    dcgan = DCGAN(gan_cfg)
+    dcgan = DCGAN(gan_cfg).to(DEVICE)
     #dcgan.load("../../models/dcgan/out/{folder_name}",f"{start_epoch}")
     tf = transforms.Compose(
         [
@@ -200,11 +212,10 @@ if __name__=='__main__':
     G_losses = []
     D_losses = []
     iters = 0
-    device= "cuda"
     for epoch in range(train_cfg.number_of_epochs):
         loop = tqdm(dataloader)
         for data in loop:
-            loss_d, loss_g = dcgan(data, features_matching=True, historical_averging=False)
+            loss_d, loss_g = dcgan(data)
             G_losses.append(loss_g)
             D_losses.append(loss_d)
             loop.set_postfix(Loss_D=loss_d, Loss_G= loss_g, epoch=epoch+1)#, D_x=D_x, D_G_z1=D_G_z1, D_G_z2=D_G_z2

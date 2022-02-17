@@ -60,9 +60,9 @@ if __name__=='__main__':
 
     # gen_name = "generator_size_64_fs_128"
     # disc_name = "discriminator_size_64_fs_64"
-    root = "../../models/dcgan/out/"
-    models = ["dcgan_FM_HA_Test", "old_model_20_batches_prunedmore"]
-    epochs = [30]
+    root = "../trained_models/dcgan/out/"
+    models = ["old_model_20_batches_prunedmore", "dcgan_refactor_test"]
+    epochs = [40]
     
     fixed_noise = torch.randn(32, 100,1,1, device="cuda")
     dict = {}
@@ -108,7 +108,7 @@ if __name__=='__main__':
     #load_weights(m, f"{root}{models[1]}/generator_size_128_fs_128_80.pth")
     #load_weights(d,f"{root}{models[1]}/discriminator_size_128_fs_32_80.pth")
 
-    gan = DCGAN()
+    gan = DCGAN(gan_cfg)
     # gan.load(os.path.join(root,models[1]),"140")
 
     BS = 4
