@@ -31,6 +31,7 @@ class Discriminator(nn.Module):
         # if feature:
         #     return x
         x = self.last(x)
+        #print("Loss:", x)
         return x
 
     

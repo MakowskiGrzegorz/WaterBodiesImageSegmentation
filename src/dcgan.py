@@ -48,52 +48,41 @@ class DCGAN(nn.Module):
         # DISCRIMINATOR ON REAL
         batch_size = x.size(0)
         label = torch.full((batch_size,), 1.0, dtype=torch.float, device=DEVICE)
-        err_real = self.criterion(self.discriminator(x).view(-1),label)
+        err_real = self.criterion(self.discriminator(x).view(-1), label)
+        #print(err_real)
         # DISCRIMINATOR ON FAKE
         z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
         fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
         err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
-
         errD = (err_real + err_fake )/2
-        #
+        errD.backward()
         return errD
 
 
     def generator_train(self, x):
         batch_size = x.size(0)
         z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
-        fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
+        fake_label = torch.full((batch_size,), 1.0, dtype=torch.float, device=DEVICE)
         fake = self.generator(z)
         output = self.discriminator(fake).view(-1)
         errG = self.criterion(output, fake_label)
-        #errG.backward()
+        errG.backward()
         return errG
-            # self.generator.zero_grad()
-            # label.fill_(1.0)
-            # fake = self.generator(z)
-            # output = self.discriminator(fake).view(-1)
-            # errG = self.criterion(output, label)
-            # errG.backward()
 
-            # self.generator.optimizer.step()
     def forward(self, x):
         x = x.to(DEVICE)
+
         # TRAIN DISCRIMINATOR
         self.discriminator.zero_grad()
         errD  = self.discriminator_train(x)
-        error_disc = errD.clone()
-        errD.backward()         
         self.discriminator.optimizer.step() 
 
         # TRAIN GENERATOR
         self.generator.zero_grad()
         errG = self.generator_train(x)
-        error_gen = errG.clone()
-        errG.backward()
-
         self.generator.optimizer.step()
 
-        return error_disc.item(), error_gen.item()
+        return errD.item(), errG.item()
 
 
         # if historical_averging:
@@ -186,10 +175,10 @@ if __name__=='__main__':
     manualSeed = 999
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
-    folder_name = "dcgan_refactor_test"
-    start_epoch = 0
+
     dcgan = DCGAN(gan_cfg).to(DEVICE)
-    #dcgan.load("../../models/dcgan/out/{folder_name}",f"{start_epoch}")
+    if not train_cfg.train_from_scratch:
+        dcgan.load(f"{train_cfg.root_path}{train_cfg.folder_name}",train_cfg.load_epoch)
     tf = transforms.Compose(
         [
             transforms.Resize(gan_cfg.image_size),
@@ -219,9 +208,10 @@ if __name__=='__main__':
             G_losses.append(loss_g)
             D_losses.append(loss_d)
             loop.set_postfix(Loss_D=loss_d, Loss_G= loss_g, epoch=epoch+1)#, D_x=D_x, D_G_z1=D_G_z1, D_G_z2=D_G_z2
-        #g_loss, d_loss = dcgan_train(netG, netD,criterion=criterion, optimizerD=optimizerD, optimizerG=optimizerG, dataloader=dataloader, epoch=epoch)
-        if( (epoch +1)%10 == 0):
-            dcgan.save(f"../trained_models/dcgan/out/{folder_name}",f"{start_epoch + epoch+1}")
+        if( (epoch +1)%train_cfg.epochs_to_save == 0):
+            if not os.path.isdir(f"{train_cfg.root_path}{train_cfg.folder_name}"):
+                os.mkdir(f"{train_cfg.root_path}{train_cfg.folder_name}")
+            dcgan.save(f"{train_cfg.root_path}{train_cfg.folder_name}",f"{train_cfg.load_epoch + epoch+1}")
             #img_list.append(dcgan.generate_batch(batch_size=6))
             # save_weights(netG, f"models/dcgan/out/old_model_20_batches_prunedmore_biggerimg/generator_size_{image_size}_fs_{ngf}_{epoch+1}.pth")
             # save_weights(netD, f"models/dcgan/out/old_model_20_batches_prunedmore_biggerimg/discriminator_size_{image_size}_fs_{ndf}_{epoch+1}.pth")
