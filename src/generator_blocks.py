@@ -23,7 +23,7 @@ class UpsampleBlock(nn.Module):
         super(UpsampleBlock, self).__init__()
         self.block = nn.Sequential(
             nn.Upsample(scale_factor=scale_factor),
-            nn.Conv2d(features_in, features_out, kernel_size=kernel_size, stride=stride,padding=padding),
+            nn.Conv2d(features_in, features_out, kernel_size=kernel_size, stride=stride, padding=padding),
             nn.BatchNorm2d(features_out),
             nn.LeakyReLU(0.2, inplace=True)
         )

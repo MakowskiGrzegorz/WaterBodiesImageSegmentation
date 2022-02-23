@@ -49,6 +49,7 @@ if __name__=='__main__':
     # GENERATE BATCHES
     for i, model in enumerate(models):
         model.load(os.path.join(inference_cfg.root_path, inference_cfg.models[i]), inference_cfg.epoch)
+        model.eval()
         batch = model.generate_batch(batch_size=inference_cfg.batch_size, threeshold=inference_cfg.threeshold,batch_gen_size=inference_cfg.batch_gen_size)
         batch = [(x[0],np.transpose(x[1],(1,2,0))) for x in batch]
         content.append(batch)

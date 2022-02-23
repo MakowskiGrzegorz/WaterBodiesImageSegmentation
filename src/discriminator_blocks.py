@@ -31,7 +31,7 @@ class DiscriminatorDropoutBlock(nn.Module):
         if bn:
             self.block.append(nn.BatchNorm2d(features_out, 0.8))
         
-        self.layer = nn.Sequential(*(self.block(features_in, features_out, kernel_size, stride, padding,bn)))
+        self.layer = nn.Sequential(*(self.block))
         
     def forward(self, x):
 

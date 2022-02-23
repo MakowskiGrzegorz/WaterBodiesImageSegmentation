@@ -12,7 +12,7 @@ class GANConfig:
         self.discriminator_block_type = 'basic' #basic or dropout
         #optimiziers
         self.learning_rate = 2e-4
-        self.beta1 = 0.5
+        self.beta1 = 0.5 
         #input
         self.number_of_channels = 3
         self.image_size = 64
@@ -20,25 +20,25 @@ class GANConfig:
 class TrainConfig:
     def __init__(self) -> None:
         #training
-        self.number_of_epochs = 15
+        self.number_of_epochs = 40
         self.batch_size = 10
 
         # model saving
-        self.folder_name = "dcgan_ekstra_test"
+        self.folder_name = "dcgan_upsample_test"
         self.root_path   =  "../trained_models/dcgan/out/"
 
-        self.train_from_scratch = False
-        self.load_epoch = 15
-        self.epochs_to_save = 5
+        self.train_from_scratch = True
+        self.load_epoch = 0
+        self.epochs_to_save = 10
 
 class InferenceConfig:
     def __init__(self) -> None:
         self.batch_size = 8
         self.root_path  = "../trained_models/dcgan/out/"
-        self.models     = ["dcgan_ekstra_test", "dcgan_refactor_test"]
-        self.configs    = [gan_cfg, gan_cfg]
+        self.models     = [ "dcgan_dropout_test", "dcgan_normal_test"]
+        self.configs    = [ gan_dropout_cfg, gan_cfg]
 
-        self.epoch      = 30
+        self.epoch      = 40
         self.rows       = 2
 
         self.threeshold = 0.2
@@ -48,5 +48,8 @@ class InferenceConfig:
 DEVICE = "cuda"
 
 gan_cfg = GANConfig()
+gan_dropout_cfg = GANConfig()
+gan_dropout_cfg.discriminator_block_type = "dropout"
+#gan_dropout_cfg.generator_block_type = "upsample"
 train_cfg = TrainConfig()
 inference_cfg = InferenceConfig()

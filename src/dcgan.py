@@ -15,7 +15,7 @@ import random
 import os
 from tqdm import tqdm
 from utils import save_weights, show_anim, show_loss
-from config import GANConfig, gan_cfg, train_cfg, DEVICE
+from config import GANConfig, gan_cfg,gan_dropout_cfg, train_cfg, DEVICE
 
 
 from discriminator import Discriminator
@@ -29,8 +29,6 @@ def weights_init(m):
     elif classname.find("BatchNorm") != -1 and classname.find("Block") == -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
-
-#DEVICE = "cuda"
 
 class DCGAN(nn.Module):
     """Some Information about DCGAN"""
@@ -53,7 +51,8 @@ class DCGAN(nn.Module):
         # DISCRIMINATOR ON FAKE
         z = torch.randn(batch_size, self.config.latent_vector_size, 1, 1, device=DEVICE)
         fake_label = torch.full((batch_size,), 0.0, dtype=torch.float, device=DEVICE)
-        err_fake = self.criterion(self.discriminator(self.generator(z).detach()).view(-1),fake_label)
+        fake = self.generator(z).detach()
+        err_fake = self.criterion(self.discriminator(fake).view(-1),fake_label)
         errD = (err_real + err_fake )/2
         errD.backward()
         return errD
@@ -176,13 +175,15 @@ if __name__=='__main__':
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
 
-    dcgan = DCGAN(gan_cfg).to(DEVICE)
+    GAN_CONFIG = gan_cfg
+
+    dcgan = DCGAN(GAN_CONFIG).to(DEVICE)
     if not train_cfg.train_from_scratch:
         dcgan.load(f"{train_cfg.root_path}{train_cfg.folder_name}",train_cfg.load_epoch)
     tf = transforms.Compose(
         [
-            transforms.Resize(gan_cfg.image_size),
-            transforms.CenterCrop(gan_cfg.image_size),
+            transforms.Resize(GAN_CONFIG.image_size),
+            transforms.CenterCrop(GAN_CONFIG.image_size),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean    = [0.5, 0.5, 0.5],
@@ -195,7 +196,7 @@ if __name__=='__main__':
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=train_cfg.batch_size,
                                          shuffle=True, num_workers=0)
 
-    fixed_noise = torch.randn(64, gan_cfg.latent_vector_size,1,1, device="cuda")
+    fixed_noise = torch.randn(64, GAN_CONFIG.latent_vector_size,1,1, device="cuda")
 
     img_list = []
     G_losses = []
