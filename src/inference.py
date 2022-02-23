@@ -48,11 +48,12 @@ if __name__=='__main__':
 
     # GENERATE BATCHES
     for i, model in enumerate(models):
-        model.load(os.path.join(inference_cfg.root_path, inference_cfg.models[i]), inference_cfg.epoch)
-        model.eval()
-        batch = model.generate_batch(batch_size=inference_cfg.batch_size, threeshold=inference_cfg.threeshold,batch_gen_size=inference_cfg.batch_gen_size)
-        batch = [(x[0],np.transpose(x[1],(1,2,0))) for x in batch]
-        content.append(batch)
+        for epoch in inference_cfg.epoch:
+            model.load(os.path.join(inference_cfg.root_path, inference_cfg.models[i]), epoch)
+            model.eval()
+            batch = model.generate_batch(batch_size=inference_cfg.batch_size, threeshold=inference_cfg.threeshold,batch_gen_size=inference_cfg.batch_gen_size)
+            batch = [(x[0],np.transpose(x[1],(1,2,0))) for x in batch]
+            content.append(batch)
     
     # GENERATE GROUND TRUTH
     if inference_cfg.gt:
@@ -62,7 +63,12 @@ if __name__=='__main__':
     # DISPLAY IMAGES AS PLOT
     fig, axs = plt.subplots(len(content),inference_cfg.batch_size, figsize=(20,20))
     counter = 0
+    e = 0
+    m=0
     for i in range(len(content)):
+        if e >= len(inference_cfg.epoch):
+            e = 0
+            m+=1
         for j in range(inference_cfg.batch_size):
             plt.axis("off")
             
@@ -72,12 +78,14 @@ if __name__=='__main__':
             if inference_cfg.gt and i== len(content) -1:
                 axs[i][0].set_ylabel("ground truth")
             else:
-                axs[i][0].set_ylabel(inference_cfg.models[i])
+
+                axs[i][0].set_ylabel(f'{inference_cfg.models[m]}_{inference_cfg.epoch[e]}')
 
             axs[i][j].set_title(str(content[i][counter][0]))
             #print(arr)
             axs[i][j].imshow(arr)
             counter +=1
+        e +=1
         counter = 0
     plt.show()
 

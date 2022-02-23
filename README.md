@@ -1,35 +1,34 @@
 # WaterBodiesImageSegmentation
 
-
-
 ## TODO LIST
-1. config for model creation             <-- partialy done
-2. cleanup in code
-- have wgan and simple gan in config
-* for this we should think about what are the differences and try to exclude them into different files 
-- two different block with conv2dtranspose and upsample
-- fit this blocks in config
-- historical averaging features etc in config
+- add more information in readme about this project
+
+- upsample + dropout get to work
+- historical averaging features etc in config                   
+
 - wgan on different branch so we have to merge it after cleanup
----------------------------------------------------------
-generator_blocks.py
-discriminator_blocks.py
-generator.py
-discriminator.py
-GAN.py   <-- this is framework
-loss.py?
+- have wgan and simple gan in config
+- loss.py?  <- when WGAN
 
-I think that WGAN and DCGAN have differences in last layer and how loss calculation happens
+- try to create inference notebook because it will fit best there
+- script for training models with different configs
+- think about better approach for model names in inference instead of e and i iterators
 
-
-
-
-3. script for training models with different configs
-4. use better GAN
 - find which gan is the best in zoo
 - download it and try to use
 
-5. inference
-- cleanup in inference code
-- try to create inference notebook because it will fit best there
+- merge this branch into main 
+## DONE LIST  ( TO REMOVE AFTER MERGING)
+- config for model creation
+- two different block with conv2dtranspose and upsample
+- cleanup in inference code    
+- generator_blocks.py        
+- discriminator_blocks.py    
+- generator.py               
+- discriminator.py           
 
+## SOME NOTES
+I think that WGAN and DCGAN have differences in last layer and how loss calculation happens
+
+## PAPERS USED 
+TBD

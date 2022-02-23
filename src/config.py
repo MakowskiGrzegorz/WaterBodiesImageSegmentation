@@ -35,15 +35,15 @@ class InferenceConfig:
     def __init__(self) -> None:
         self.batch_size = 8
         self.root_path  = "../trained_models/dcgan/out/"
-        self.models     = [ "dcgan_dropout_test", "dcgan_normal_test"]
-        self.configs    = [ gan_dropout_cfg, gan_cfg]
+        self.models     = [ "dcgan_dropout_test"]#, "dcgan_normal_test"]
+        self.configs    = [ gan_dropout_cfg]#, gan_cfg]
 
-        self.epoch      = 40
+        self.epoch      = [20,30, 40]
         self.rows       = 2
 
         self.threeshold = 0.2
         self.batch_gen_size = 256
-        self.gt = True
+        self.gt = False
 
 DEVICE = "cuda"
 
