@@ -4,7 +4,6 @@
 - upsample + dropout get to work
 - historical averaging features etc in config
 
-- try to create inference notebook because it will fit best there
 - script for training models with different configs
 - think about better approach for model names in inference instead of e and i iterators
 - merge this branch into main 
@@ -26,6 +25,7 @@
 - discriminator_blocks.py    
 - generator.py               
 - discriminator.py           
+- try to create inference notebook because it will fit best there
 
 ## SOME NOTES
 I think that WGAN and DCGAN have differences in last layer and how loss calculation happens
