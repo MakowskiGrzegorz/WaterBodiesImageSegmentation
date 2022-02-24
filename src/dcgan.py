@@ -1,25 +1,20 @@
-from albumentations.augmentations.crops.transforms import CenterCrop
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.modules.activation import Tanh
-from torch.nn.modules.batchnorm import BatchNorm2d
-import torch.optim as optim
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from dataset import WaterBodyGeneratorDataset
-import torchvision.datasets as dset
 import torchvision.transforms as transforms
-import torchvision.utils as vutils
+
+
+
 import random
 import os
 from tqdm import tqdm
-from utils import save_weights, show_anim, show_loss
+
+
+from dataset import WaterBodyGeneratorDataset
 from config import GANConfig, gan_cfg,gan_dropout_cfg, train_cfg, DEVICE
-
-
 from discriminator import Discriminator
 from generator import Generator
+from utils import show_loss
 
 def weights_init(m):
     classname = m.__class__.__name__
