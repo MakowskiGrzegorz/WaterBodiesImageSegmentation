@@ -6,6 +6,7 @@
 
 - script for training models with different configs
 - think about better approach for model names in inference instead of e and i iterators
+
 - merge this branch into main 
 ---------------------------------------------------------------------------------------
 - add more information in readme about this project

@@ -12,18 +12,39 @@ class Discriminator(nn.Module):
     def __init__(self, config:GANConfig):
         super(Discriminator, self).__init__()
 
-        self.input = nn.Sequential(
-            nn.Conv2d(config.number_of_channels, config.discriminator_features_number * config.discriminator_features_multipliers[0], kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.2, inplace=True)
-        )
+        self.input = self.instantinate_input_layer(config)
         self.main = nn.ModuleList()
         self.main += [_discriminator_blocks[config.discriminator_block_type](config.discriminator_features_number * config.discriminator_features_multipliers[i], config.discriminator_features_number * config.discriminator_features_multipliers[i+1],kernel_size=4, stride=2, padding=1) for i in range(len(config.discriminator_features_multipliers)-1)]
-        self.last = nn.Sequential(
-            nn.Conv2d(config.discriminator_features_number * config.discriminator_features_multipliers[-1], 1, kernel_size=4, stride=1, padding=0, bias=False),
-            nn.Sigmoid()
-        )
+
+        self.last = self.instantinate_last_layer(config)
         self.optimizer = optim.Adam(self.parameters(), lr=config.learning_rate, betas=(config.beta1, 0.999))
         self.history = torch.Tensor()
+
+    def instantinate_last_layer(self, config):
+        layer = []
+        if config.discriminator_last_layer_type == "conv":
+            layer += [nn.Conv2d(config.discriminator_features_number * config.discriminator_features_multipliers[-1], 1, kernel_size=4, stride=1, padding=0, bias=False)]
+        elif config.discriminator_last_layer_type == "linear":
+            ds_size = config.image_size //2 ** 4
+            layer += [nn.Linear(config.discriminator_features_number * config.discriminator_features_multipliers[-1] * ds_size **2, 1)]
+        
+        if config.discriminator_last_layer_activation == "sigmoid":
+            layer += [nn.Sigmoid()]
+        return nn.Sequential(*layer)
+
+    def instantinate_input_layer(self, config):
+        layer = []#nn.ModuleList()
+        if config.discriminator_input_layer_type == "conv":
+            #layer = nn.Sequential(nn.Conv2d(config.number_of_channels, config.discriminator_features_number * config.discriminator_features_multipliers[0], kernel_size=4, stride=2, padding=1),
+            #                      nn.LeakyReLU(0.2, inplace=True))
+            layer += [nn.Conv2d(config.number_of_channels, config.discriminator_features_number * config.discriminator_features_multipliers[0], kernel_size=4, stride=2, padding=1)]
+            layer += [nn.LeakyReLU(0.2, inplace=True)]
+        elif config.discriminator_input_layer_type == "dropout":
+            layer += [nn.Conv2d(config.number_of_channels, config.discriminator_features_number * config.discriminator_features_multipliers[0],kernel_size=3, stride=2, padding=1)]
+            layer += [nn.LeakyReLU(0.2, inplace=True)]
+            layer += [nn.Dropout(0.25)]
+        return nn.Sequential(*layer)
+    
     def forward(self, x):
         x = self.input(x)
         for block in self.main:
@@ -31,36 +52,8 @@ class Discriminator(nn.Module):
         # if feature:
         #     return x
         x = self.last(x)
-        #print("Loss:", x)
         return x
 
     
-
-
-# class DiscriminatorNew(nn.Module):
-#     """Some Information about DiscriminatorNew"""
-#     def __init__(self):
-#         super(DiscriminatorNew, self).__init__()
-#         def discriminator_block(in_filters, out_filters, bn=True):
-#             block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(0.2, inplace=True), nn.Dropout2d(0.25)]
-#             if bn:
-#                 block.append(nn.BatchNorm2d(out_filters, 0.8))
-#             return block
-
-#         self.model = nn.Sequential(
-#             *discriminator_block(3, 16, bn=False),
-#             *discriminator_block(16, 32),
-#             *discriminator_block(32, 64),
-#             *discriminator_block(64, 128),
-#         )
-
-#         ds_size = image_size //2** 4
-
-#         self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
-#     def forward(self, x):
-#         x = self.model(x)
-#         x = x.view(x.shape[0], -1)
-#         validity = self.adv_layer(x)
-#         return validity
 
 

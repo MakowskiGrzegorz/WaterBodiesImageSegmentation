@@ -173,6 +173,7 @@ if __name__=='__main__':
     GAN_CONFIG = gan_cfg
 
     dcgan = DCGAN(GAN_CONFIG).to(DEVICE)
+    print(dcgan.discriminator)
     if not train_cfg.train_from_scratch:
         dcgan.load(f"{train_cfg.root_path}{train_cfg.folder_name}",train_cfg.load_epoch)
     tf = transforms.Compose(

@@ -7,14 +7,39 @@ class GANConfig:
         self.generator_features_multipliers = [8, 4, 2]
         self.generator_block_type = 'transpose'  #transpose or upsample
         #discriminator
+        self.discriminator_input_layer_type = "conv"
+
+        self.discriminator_block_type = 'basic' #basic or dropout
         self.discriminator_features_number = 64
         self.discriminator_features_multipliers = [1, 2, 4, 8]
-        self.discriminator_block_type = 'basic' #basic or dropout
+
+        self.discriminator_init_args = []
+        self.discriminator_last_layer_type = "conv"
+        self.discriminator_last_layer_activation = "sigmoid"
+
         #optimiziers
         self.learning_rate = 2e-4
         self.beta1 = 0.5 
         #input
         self.number_of_channels = 3
+        self.image_size = 64
+
+class GANDropoutConfig:
+    def __init__(self) -> None:
+        self.latent_vector_size = 100
+
+        #discriminator
+        self.discriminator_input_type = "dropout"
+
+        self.discriminator_block_type = "dropout"
+
+        self.discriminator_features_number = 16
+        self.discriminator_features_multipliers = [1,2,4,8]
+        self.number_of_channels = 3
+
+        self.last_layer_type = "linear"
+        self.last_layer_activation = "sigmoid"
+        
         self.image_size = 64
 
 class TrainConfig:
@@ -24,7 +49,7 @@ class TrainConfig:
         self.batch_size = 10
 
         # model saving
-        self.folder_name = "dcgan_upsample_test"
+        self.folder_name = "dcgan_basic_test"
         self.root_path   =  "../trained_models/dcgan/out/"
 
         self.train_from_scratch = True
@@ -48,8 +73,8 @@ class InferenceConfig:
 DEVICE = "cuda"
 
 gan_cfg = GANConfig()
-gan_dropout_cfg = GANConfig()
-gan_dropout_cfg.discriminator_block_type = "dropout"
+gan_dropout_cfg = GANDropoutConfig()
+
 #gan_dropout_cfg.generator_block_type = "upsample"
 train_cfg = TrainConfig()
 inference_cfg = InferenceConfig()
